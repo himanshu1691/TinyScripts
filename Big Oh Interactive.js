@@ -2,6 +2,8 @@
 equation 2 => x   => g(n)
 F(x) is O(g(x)) if there exist 2 constants 'c' and 'xstart'\n such that f(x) <= c*g(x) for all x,x>=xstart
 This example is explanation of Big-O notation described on:  https://www.khanacademy.org/computing/computer-science/algorithms/asymptotic-notation/a/asymptotic-notation
+
+Live demo can be seen at: https://www.khanacademy.org/computer-programming/asymptotic-notation-big-o/4745834323640320
 */
 
 var xstart = 0;
