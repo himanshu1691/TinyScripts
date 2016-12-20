@@ -1,0 +1,390 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+
+  <title>LiveMaps</title>
+  <meta name="description" content="The HTML5 Herald">
+  <meta name="author" content="SitePoint">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
+
+  <!-- Latest compiled and minified CSS -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/1.4.5/socket.io.min.js"></script>
+
+  <style type="text/css">
+
+    body {
+      color: #838385;
+      font-family: 'Raleway', sans-serif;
+      background: black;
+    }
+    nav .fa.fa-expand {
+      display: inherit;
+    }
+    a {
+      color: #70ccdb;
+      transition: 0.2s color;
+      text-decoration: none;
+    }
+    a:hover {
+      color: #838385;
+    }
+    a:focus {
+      outline: 0 none;
+    }
+    @keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0px);
+      }
+    }
+    @-webkit-keyframes fadeIn {
+      0% {
+        opacity: 0;
+        transform: translateX(50px);
+      }
+      100% {
+        opacity: 1;
+        transform: translateX(0px);
+      }
+    }
+    .clr {
+      display: block;
+      float: none;
+      clear: both;
+    }
+    #bg,
+    #static,
+    #animated {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+    #map-section {
+      background: radial-gradient(ellipse at center, #1c474e 0%, #0e1d20 100%);
+      overflow: hidden;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+
+    #map-section h2 {
+      display: none;
+      position: absolute;
+      font-size: 20px;
+      left: 3%;
+      top: 0%;
+      opacity: 0.4;
+      color: #70ccdb;
+    }
+    #map-section .left-side-panel {
+      position: absolute;
+      color: white;
+      bottom: 14%;
+      left: 3%;
+      width: 40%;
+
+    }
+    #map-section .left-side-panel h3 {
+      font-size: 14px;
+      line-height: 21px;
+      border-bottom: 1px solid #4F4F4F;
+      padding: 0 0 10px 0;
+    }
+    #map-section .left-side-panel ul {
+      padding: 5px 0;
+      height: 100px;
+      position: relative;
+    }
+    #map-section .left-side-panel ul li {
+      transition: all 0.3s;
+      animation: fadeIn 0.3s;
+      padding: 5px 0;	
+      position: absolute;
+      font-size: 11px;
+      width: 70%;
+      line-height: 18px;
+      margin: auto;
+    }
+    #map-section .left-side-panel ul li p {
+      font-size: 11px;
+      color: #838385;
+
+    }
+    #map-section .left-side-panel p {
+      clear: both;
+      padding-top: 10	px;
+      font-size: 10px;
+      color: #70ccdb;
+
+    }
+
+
+    @media screen and (max-width: 768px) {
+      #map-section .left-side-panel {
+        width: 90%;
+        margin-left: 5%;
+      }
+
+
+      #map-section .left-side-panel {
+        top: 30%;
+
+      }
+
+      /*# sourceMappingURL=public/css/homepage.css.map */
+    </style>
+
+  </head>
+
+  <body class="content-wrapper">
+    <section id="map-section" style="min-height: 1593px; width: 100%;">
+      <div id="map" class="col-lg-12">
+        <img src="liveMap.png" id="bg"  alt="World Map" style="width: 100%;">
+        <canvas id="animated" width="1903g" height="951"></canvas>
+
+
+        <div class="left-side-panel wrapper" >
+         <h3>TOTAL<br><span id="totalhits" class="ct-total-tweet" style="display: inline-block; width: 36.5px;">0</span> hits</h3>
+         <ul >
+           <li style="top: 0%; left: 50%;" ><span id="c1">Brazil</span><p><span class="ct" id="ch1" style="display: inline-block; width: 18px;">0</span> hits</p></li>
+
+           <li style="top: 0%; left: 0%;" ><span id="c2">United States</span><p><span class="ct" id="ch2" style="display: inline-block; width: 18px;">0</span> hits</p></li>
+
+           <li style="top: 50%; left: 0%;"><span id="c3">India</span><p><span class="ct" id="ch3" style="display: inline-block; width: 12px;">0</span> hits</p></li>
+
+           <li style="top: 50%; left: 50%;" ><span id="c4">Argentina</span><p><span class="ct" id="ch4" style="display: inline-block; width: 12px;">0</span> hits</p>
+           </li>
+
+         </ul>
+         <p><p class="timer">Recorded since <time id="timer1">5:29 pm</time></p></p>
+       </div>
+
+     </div>
+
+
+   </section>
+
+   <script type="text/javascript">
+
+  /*
+  function to convert from lat long to X,Y
+  The x,y values depend upon the size of the image of the world based on the sperical mercator projection.
+  This only works correctly if the canvas is placed exactly above the image.
+  */
+  function geoToXY(lat,long){
+		mapWidth    = document.getElementById("bg").clientWidth;      //image width;
+		mapHeight   = document.getElementById("bg").clientHeight;     //image height;
+
+		// get x value
+		x = (long+180)*(mapWidth/360)
+
+		// convert from degrees to radians
+		latRad = lat*Math.PI/180;
+
+		// get y value
+		mercN = Math.log(Math.tan((Math.PI/4)+(latRad/2)));
+		y     = (mapHeight/2)-(mapWidth*mercN/(2*Math.PI));
+		return[x,y];
+		
+	}
+
+  // Setting up the properties
+  var WIDTH = window.innerWidth,
+  HEIGHT = window.innerHeight,
+  MAX_PARTICLES = 100,
+  DRAW_INTERVAL = 60,
+  container = document.querySelector('#map'),
+  canvas = document.querySelector('#animated'),
+  context = canvas.getContext('2d'),
+  gradient = null,
+  pixies = new Array();
+
+  function setDimensions(e) {
+   WIDTH = window.innerWidth;
+   HEIGHT = window.innerHeight;
+   container.style.width = WIDTH+'px';
+   container.style.height = HEIGHT+'px';
+   canvas.width = WIDTH;
+   canvas.height = HEIGHT;
+ }
+ setDimensions();
+ window.addEventListener('resize', setDimensions);
+
+ /*function of redering of IP's on the canvas over the image. Rather then just plotting a square of a simple circle, we are using a custom shape using the html canvas*/
+
+ function Circle(l,m) {
+   this.settings = {ttl:8000, xmax:5, ymax:2, rmax:10, rt:1, xdef:l, ydef:m, xdrift:4, ydrift: 4, random:false, blink:false};
+
+   this.reset = function() {
+     this.x = (this.settings.random ? WIDTH*Math.random() : this.settings.xdef);
+     this.y = (this.settings.random ? HEIGHT*Math.random() : this.settings.ydef);
+     this.r = ((this.settings.rmax-1)*Math.random()) + 1;
+     this.dx = (Math.random()*this.settings.xmax) * (Math.random() < .5 ? -1 : 1);
+     this.dy = (Math.random()*this.settings.ymax) * (Math.random() < .5 ? -1 : 1);
+     this.hl = (this.settings.ttl/DRAW_INTERVAL)*(this.r/this.settings.rmax);
+     this.rt = Math.random()*this.hl;
+     this.settings.rt = Math.random()+1;
+     this.stop = Math.random()*.2+.4;
+   }
+      //fading the dots to provide a blinking effect
+      this.fade = function() {
+       this.rt += this.settings.rt;
+     }
+
+      //drawing the custom shape over the canvas
+      this.draw = function() {
+       if(this.settings.blink && (this.rt <= 0 || this.rt >= this.hl)) {
+         this.settings.rt = this.settings.rt*-1;
+       } else if(this.rt >= this.hl) {
+         this.reset();
+       }
+
+       var newo = 1-(this.rt/this.hl);
+       context.beginPath();
+       context.arc(this.x, this.y, this.r, 0, Math.PI*2, true);
+       context.closePath();
+
+       var cr = this.r*newo;
+       gradient = context.createRadialGradient(this.x, this.y, 0, this.x, this.y,4);
+       gradient.addColorStop(0.0, 'rgba(255,255,255,'+newo+')');
+       gradient.addColorStop(this.stop, 'rgba(77,101,181,'+(newo*.6)+')');
+       gradient.addColorStop(1.0, 'rgba(77,101,181,0)');
+       context.fillStyle = gradient;
+       context.fill();
+     }
+
+     this.getX = function() { return this.x; }
+     this.getY = function() { return this.y; }
+	}// end of Circle
+
+
+
+//function to plot all the created points
+function plotIP(x,y){
+
+	newip = new Circle(x,y);
+	newip.reset();
+	newip.fade();
+	newip.draw();
+}
+
+
+//dummy entries to check if the points are getting mapped at the right place
+latitude = new Array();
+longitude = new Array();
+
+latitude.push(37.3394444);	//san jose
+longitude.push(-121.8938889);
+
+latitude.push(18.586);	//infy
+longitude.push(73.7346);
+
+latitude.push(-25.2744);	//australia
+longitude.push(133.7751);
+
+
+//function to convert lat,long to x,y and then plot on the canvas
+function You(){
+	context.clearRect(0, 0, WIDTH, HEIGHT);
+	if(latitude.length>0){
+		for(p=0;p<latitude.length;p++){
+      temp = geoToXY(latitude[p],longitude[p]);
+      u = temp[0];
+      v = temp[1];
+      plotIP(u,v);
+    }
+  }
+
+}
+
+//function that can be used if we want to display a dot only for a few seconds
+function deleteFromList() {
+  latitude.shift();
+  longitude.shift();
+}
+
+
+
+setInterval(You,200);
+
+setInterval(deleteFromList,5000);
+
+</script>
+
+
+<script>
+/*
+Code containing logic to change the canvas plot on every new entry on the socket
+*/
+	counter = 0;
+  var img = document.getElementById('bg');
+  var canv = document.createElement('canvas');
+  canv.width = img.width;
+  canv.height = img.height;
+  canv.getContext('2d').drawImage(img, 0, 0, img.width, img.height);  //storing image in canvas object for checking entries with bad coordinates
+
+  countryhits={};		
+  $('#timer1').text(new Date().toString("hh:mm tt"));
+
+/*SocketIO code for getting new IP locations from the server
+When any entry is received, we also update the top 4 countries from where maximun hits are coming from
+*/
+var socket = io();
+socket.on('channel_to_send_data', function(data){
+  console.log(data);
+  if(data._id){
+   counter++; //hits counter
+
+//logic for getting top 4 countries
+   if(countryhits.hasOwnProperty(data.country)){
+    countryhits[data.country]++;
+  }
+  else{
+   countryhits[data.country] = 0;
+ }
+ temparr=[];
+ $.each(countryhits,function(key,value)
+ {
+   temparr.push(value);
+ });
+ temparr.sort(function(a, b){return b-a});
+ temparr = temparr.slice(0, 4);
+
+ tempcountryhits = countryhits;
+ temparr.forEach(function(entry,index) {
+  $.each(tempcountryhits,function(key,value)
+  {
+    if(value == entry){
+     console.log(key+"  "+value);
+     spanindex = index+1
+     $('#ch'+spanindex).text(value);
+     $('#c'+spanindex).text(key);
+     delete tempcountryhits.key;
+   }
+ });
+}); //top 4 countries over
+
+
+
+ $('#totalhits').text(counter); //total hits counter
+
+ temp =geoToXY(data.latitude,data.longitude); //lat,long to x,y
+
+//pushing to arrays Latitude and Longitude which we are regularly checking and plotting on the canvas
+ if(canv.getContext('2d').getImageData(temp[0],temp[1], 1, 1).data[3]>100){ //checking for wrong positions by checking te transperency of the pixels, if in water, they are transperant. Wrong entries appear because of some incorrect entries in Free database
+  latitude.push(data.latitude);
+  longitude.push(data.longitude);
+}
+
+}
+});
+</script>
+</body>
+</html>
